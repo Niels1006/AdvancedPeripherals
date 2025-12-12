@@ -24,7 +24,7 @@ import de.srendi.advancedperipherals.common.util.inventory.FluidFilter;
 import de.srendi.advancedperipherals.common.util.inventory.ItemFilter;
 import de.srendi.advancedperipherals.common.util.inventory.ItemUtil;
 import io.github.projectet.ae2things.item.DISKDrive;
-import it.unimi.dsi.fastutil.objects.Object2LongMap;
+import it.unimi.dsi.fastutil.objects.Reference2LongMap;
 import me.ramidzkh.mekae2.ae2.MekanismKey;
 import net.minecraft.core.BlockPos;
 import net.minecraft.nbt.CompoundTag;
@@ -38,27 +38,29 @@ import net.minecraftforge.items.IItemHandler;
 import net.minecraftforge.registries.ForgeRegistries;
 import org.apache.logging.log4j.Level;
 import org.jetbrains.annotations.Nullable;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 import java.util.*;
 
+@SuppressWarnings("unchecked")
 public class AppEngApi {
+
+    private static final Logger LOGGER = LogManager.getLogger(AppEngApi.class);
 
     public static Pair<Long, AEItemKey> findAEStackFromStack(MEStorage monitor, @Nullable ICraftingService crafting, ItemStack item) {
         return findAEStackFromFilter(monitor, crafting, ItemFilter.fromStack(item));
     }
 
     public static Pair<Long, AEItemKey> findAEStackFromFilter(MEStorage monitor, @Nullable ICraftingService crafting, ItemFilter item) {
-        for (Object2LongMap.Entry<AEKey> temp : monitor.getAvailableStacks()) {
-            if (temp.getKey() instanceof AEItemKey key && item.test(key.toStack()))
-                return Pair.of(temp.getLongValue(), key);
+        for (Reference2LongMap.Entry<AEKey> temp : monitor.getAvailableStacks()) {
+            if (temp.getKey() instanceof AEItemKey key && item.test(key.toStack())) return Pair.of(temp.getLongValue(), key);
         }
 
-        if (crafting == null)
-            return Pair.of(0L, AEItemKey.of(ItemStack.EMPTY));
+        if (crafting == null) return Pair.of(0L, AEItemKey.of(ItemStack.EMPTY));
 
         for (var temp : crafting.getCraftables(param -> true)) {
-            if (temp instanceof AEItemKey key && item.test(key.toStack()))
-                return Pair.of(0L, key);
+            if (temp instanceof AEItemKey key && item.test(key.toStack())) return Pair.of(0L, key);
         }
 
         return Pair.of(0L, AEItemKey.of(ItemStack.EMPTY));
@@ -69,30 +71,35 @@ public class AppEngApi {
     }
 
     public static Pair<Long, AEFluidKey> findAEFluidFromFilter(MEStorage monitor, @Nullable ICraftingService crafting, FluidFilter item) {
-        for (Object2LongMap.Entry<AEKey> temp : monitor.getAvailableStacks()) {
-            if (temp.getKey() instanceof AEFluidKey key && item.test(key.toStack(1)))
-                return Pair.of(temp.getLongValue(), key);
+        for (Reference2LongMap.Entry<AEKey> temp : monitor.getAvailableStacks()) {
+            if (temp.getKey() instanceof AEFluidKey key && item.test(key.toStack(1))) return Pair.of(temp.getLongValue(), key);
         }
 
-        if (crafting == null)
-            return null;
+        if (crafting == null) return null;
 
         for (var temp : crafting.getCraftables(param -> true)) {
-            if (temp instanceof AEFluidKey key && item.test(key.toStack(1)))
-                return Pair.of(0L, key);
+            if (temp instanceof AEFluidKey key && item.test(key.toStack(1))) return Pair.of(0L, key);
         }
 
         return null;
     }
 
+
     public static List<Object> listStacks(MEStorage monitor, ICraftingService service) {
         List<Object> items = new ArrayList<>();
-        KeyCounter keyCounter = monitor.getAvailableStacks();
-        for (Object2LongMap.Entry<AEKey> aeKey : keyCounter) {
-            if (aeKey.getKey() instanceof AEItemKey itemKey) {
-                items.add(getObjectFromStack(Pair.of(aeKey.getLongValue(), itemKey), service));
+
+        try {
+            KeyCounter keyCounter = monitor.getAvailableStacks();
+
+            for (Reference2LongMap.Entry<AEKey> aeKey : keyCounter) {
+                if (aeKey.getKey() instanceof AEItemKey itemKey) {
+                    items.add(getObjectFromStack(Pair.of(aeKey.getLongValue(), itemKey), service));
+                }
             }
+        } catch (NullPointerException e) {
+            AdvancedPeripherals.LOGGER.warn("Could not get available stacks from AE2 storage", e);
         }
+
         return items;
     }
 
@@ -110,7 +117,7 @@ public class AppEngApi {
 
     public static List<Object> listFluids(MEStorage monitor, ICraftingService service) {
         List<Object> items = new ArrayList<>();
-        for (Object2LongMap.Entry<AEKey> aeKey : monitor.getAvailableStacks()) {
+        for (Reference2LongMap.Entry<AEKey> aeKey : monitor.getAvailableStacks()) {
             if (aeKey.getKey() instanceof AEFluidKey itemKey) {
                 items.add(getObjectFromStack(Pair.of(aeKey.getLongValue(), itemKey), service));
             }
@@ -120,7 +127,7 @@ public class AppEngApi {
 
     public static List<Object> listGases(MEStorage monitor, ICraftingService service, int flag) {
         List<Object> items = new ArrayList<>();
-        for (Object2LongMap.Entry<AEKey> aeKey : monitor.getAvailableStacks()) {
+        for (Reference2LongMap.Entry<AEKey> aeKey : monitor.getAvailableStacks()) {
             if (APAddons.appMekLoaded && aeKey.getKey() instanceof MekanismKey itemKey) {
                 items.add(getObjectFromStack(Pair.of(aeKey.getLongValue(), itemKey), service));
             }
@@ -141,14 +148,10 @@ public class AppEngApi {
     }
 
     public static <T extends AEKey> Map<String, Object> getObjectFromStack(Pair<Long, T> stack, @Nullable ICraftingService service) {
-        if (stack.getRight() == null)
-            return Collections.emptyMap();
-        if (stack.getRight() instanceof AEItemKey itemKey)
-            return getObjectFromItemStack(Pair.of(stack.getLeft(), itemKey), service);
-        if (stack.getRight() instanceof AEFluidKey fluidKey)
-            return getObjectFromFluidStack(Pair.of(stack.getLeft(), fluidKey), service);
-        if (APAddons.appMekLoaded && (stack.getRight() instanceof MekanismKey gasKey))
-            return getObjectFromGasStack(Pair.of(stack.getLeft(), gasKey), service);
+        if (stack.getRight() == null) return Collections.emptyMap();
+        if (stack.getRight() instanceof AEItemKey itemKey) return getObjectFromItemStack(Pair.of(stack.getLeft(), itemKey), service);
+        if (stack.getRight() instanceof AEFluidKey fluidKey) return getObjectFromFluidStack(Pair.of(stack.getLeft(), fluidKey), service);
+        if (APAddons.appMekLoaded && (stack.getRight() instanceof MekanismKey gasKey)) return getObjectFromGasStack(Pair.of(stack.getLeft(), gasKey), service);
 
         AdvancedPeripherals.debug("Could not create table from unknown stack " + stack.getRight().getClass() + " - Report this to the maintainer of ap", Level.ERROR);
         return Collections.emptyMap();
@@ -219,12 +222,9 @@ public class AppEngApi {
     }
 
     public static Map<String, Object> getObjectFromGenericStack(GenericStack stack) {
-        if (stack.what() == null)
-            return Collections.emptyMap();
-        if (stack.what() instanceof AEItemKey aeItemKey)
-            return getObjectFromItemStack(Pair.of(stack.amount(), aeItemKey), null);
-        if (stack.what() instanceof AEFluidKey aeFluidKey)
-            return getObjectFromFluidStack(Pair.of(stack.amount(), aeFluidKey), null);
+        if (stack.what() == null) return Collections.emptyMap();
+        if (stack.what() instanceof AEItemKey aeItemKey) return getObjectFromItemStack(Pair.of(stack.amount(), aeItemKey), null);
+        if (stack.what() instanceof AEFluidKey aeFluidKey) return getObjectFromFluidStack(Pair.of(stack.amount(), aeFluidKey), null);
         return Collections.emptyMap();
     }
 
@@ -232,13 +232,11 @@ public class AppEngApi {
         return node.getGrid().getService(IStorageService.class).getInventory();
     }
 
-    public static boolean isItemCrafting(MEStorage monitor, ICraftingService grid, ItemFilter filter,
-                                         @Nullable ICraftingCPU craftingCPU) {
+    public static boolean isItemCrafting(MEStorage monitor, ICraftingService grid, ItemFilter filter, @Nullable ICraftingCPU craftingCPU) {
         Pair<Long, AEItemKey> stack = AppEngApi.findAEStackFromFilter(monitor, grid, filter);
 
         // If the item stack does not exist, it cannot be crafted.
-        if (stack == null)
-            return false;
+        if (stack == null) return false;
 
         // If the passed cpu is null, check all cpus
         if (craftingCPU == null) {
@@ -253,6 +251,7 @@ public class AppEngApi {
 
                     if (jobStatus.crafting().what().equals(stack.getRight()))
                         return true;
+
                 }
             }
         } else {
@@ -260,8 +259,7 @@ public class AppEngApi {
                 CraftingJobStatus jobStatus = craftingCPU.getJobStatus();
 
                 // avoid null pointer exception
-                if (jobStatus == null)
-                    return false;
+                if (jobStatus == null) return false;
 
                 return jobStatus.crafting().what().equals(stack.getRight());
             }
@@ -270,8 +268,7 @@ public class AppEngApi {
         return false;
     }
 
-    public static boolean isFluidCrafting(MEStorage monitor, ICraftingService grid, FluidFilter filter,
-                                          @Nullable ICraftingCPU craftingCPU) {
+    public static boolean isFluidCrafting(MEStorage monitor, ICraftingService grid, FluidFilter filter, @Nullable ICraftingCPU craftingCPU) {
         Pair<Long, AEFluidKey> stack = AppEngApi.findAEFluidFromFilter(monitor, grid, filter);
 
         // If the fluid stack does not exist, it cannot be crafted.
@@ -291,6 +288,7 @@ public class AppEngApi {
 
                     if (jobStatus.crafting().what().equals(stack.getRight()))
                         return true;
+
                 }
             }
         } else {
@@ -298,8 +296,7 @@ public class AppEngApi {
                 CraftingJobStatus jobStatus = craftingCPU.getJobStatus();
 
                 // avoid null pointer exception
-                if (jobStatus == null)
-                    return false;
+                if (jobStatus == null) return false;
 
                 return jobStatus.crafting().what().equals(stack.getRight());
             }
@@ -339,10 +336,12 @@ public class AppEngApi {
                 } else if (APAddons.aeAdditionsLoaded && (stack.getItem() instanceof StorageCell storageCell)) {
                     if (storageCell.getKeyType() != AEKeyType.items())
                         continue;
+
                     total += storageCell.getKiloBytes() * 1024L;
                 } else if (APAddons.aeAdditionsLoaded && (stack.getItem() instanceof StorageCell storageCell)) {
                     if (storageCell.getKeyType() != AEKeyType.items())
                         continue;
+
                     total += storageCell.getKiloBytes() * 1024;
                 }
             }
@@ -486,7 +485,7 @@ public class AppEngApi {
             StorageBusPart bus = (StorageBusPart) iterator.next().getService(IStorageProvider.class);
             KeyCounter keyCounter = bus.getInternalHandler().getAvailableStacks();
 
-            for (Object2LongMap.Entry<AEKey> aeKey : keyCounter) {
+            for (Reference2LongMap.Entry<AEKey> aeKey : keyCounter) {
                 if (aeKey.getKey() instanceof AEItemKey) {
                     used += aeKey.getLongValue();
                 }
@@ -545,7 +544,7 @@ public class AppEngApi {
             StorageBusPart bus = (StorageBusPart) iterator.next().getService(IStorageProvider.class);
             KeyCounter keyCounter = bus.getInternalHandler().getAvailableStacks();
 
-            for (Object2LongMap.Entry<AEKey> aeKey : keyCounter) {
+            for (Reference2LongMap.Entry<AEKey> aeKey : keyCounter) {
                 if (aeKey.getKey() instanceof AEFluidKey fluidKey) {
                     used += aeKey.getLongValue();
                 }

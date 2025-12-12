@@ -23,6 +23,7 @@ import net.minecraftforge.network.NetworkHooks;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
+@SuppressWarnings("removal")
 public abstract class BaseBlockEntityBlock extends BaseBlock implements EntityBlock {
 
     private final boolean belongToTickingEntity;

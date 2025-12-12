@@ -1,6 +1,5 @@
 package de.srendi.advancedperipherals.common.data;
 
-import appeng.core.definitions.AEBlocks;
 import com.refinedmods.refinedstorage.RSBlocks;
 import com.refinedmods.refinedstorage.RSItems;
 import dan200.computercraft.shared.ModRegistry;
@@ -26,6 +25,7 @@ import org.jetbrains.annotations.NotNull;
 import java.util.function.Consumer;
 import java.util.stream.Stream;
 
+@SuppressWarnings("removal")
 public class RecipesProvider extends RecipeProvider implements IConditionBuilder {
 
     private static final Block CASING = Blocks.PERIPHERAL_CASING.get();
@@ -67,7 +67,7 @@ public class RecipesProvider extends RecipeProvider implements IConditionBuilder
 
         ConditionalRecipe.builder().addCondition(modLoaded("minecolonies")).addRecipe(ShapedRecipeBuilder.shaped(RecipeCategory.REDSTONE, Blocks.COLONY_INTEGRATOR.get()).define('O', ItemTags.LOGS).define('A', CASING).define('B', Ingredient.fromValues(Stream.of(new RawValue(new ResourceLocation("minecolonies", "build_goggles"))))).define('S', Ingredient.fromValues(Stream.of(new RawValue(new ResourceLocation("structurize", "sceptergold"))))).define('R', Ingredient.fromValues(Stream.of(new RawValue(new ResourceLocation("minecolonies", "blockminecoloniesrack"))))).pattern("ORO").pattern("BAS").pattern("ORO").unlockedBy(HAS_ITEM, has(CASING))::save).build(consumer, new ResourceLocation(AdvancedPeripherals.MOD_ID, "colony_integrator"));
 
-        ConditionalRecipe.builder().addCondition(modLoaded("ae2")).addRecipe(ShapedRecipeBuilder.shaped(RecipeCategory.REDSTONE, Blocks.ME_BRIDGE.get()).define('F', AEBlocks.FLUIX_BLOCK.asItem()).define('A', CASING).define('I', AEBlocks.INTERFACE.asItem()).pattern("FIF").pattern("IAI").pattern("FIF").unlockedBy(HAS_ITEM, has(CASING))::save).build(consumer, new ResourceLocation(AdvancedPeripherals.MOD_ID, "me_bridge"));
+        // ConditionalRecipe.builder().addCondition(modLoaded("ae2")).addRecipe(ShapedRecipeBuilder.shaped(RecipeCategory.REDSTONE, Blocks.ME_BRIDGE.get()).define('F', AEBlocks.FLUIX_BLOCK.asItem()).define('A', CASING).define('I', AEBlocks.INTERFACE.asItem()).pattern("FIF").pattern("IAI").pattern("FIF").unlockedBy(HAS_ITEM, has(CASING))::save).build(consumer, new ResourceLocation(AdvancedPeripherals.MOD_ID, "me_bridge"));
 
         ConditionalRecipe.builder().addCondition(modLoaded("refinedstorage")).addRecipe(ShapedRecipeBuilder.shaped(RecipeCategory.REDSTONE, Blocks.RS_BRIDGE.get()).define('Q', RSItems.QUARTZ_ENRICHED_IRON.get()).define('A', CASING).define('I', RSBlocks.INTERFACE.get()).pattern("QIQ").pattern("IAI").pattern("QIQ").unlockedBy(HAS_ITEM, has(CASING))::save).build(consumer, new ResourceLocation(AdvancedPeripherals.MOD_ID, "rs_bridge"));
 

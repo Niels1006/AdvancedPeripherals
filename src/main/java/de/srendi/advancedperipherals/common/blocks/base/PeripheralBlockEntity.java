@@ -45,6 +45,7 @@ public abstract class PeripheralBlockEntity<T extends BasePeripheral<?>> extends
     private LazyOptional<? extends IFluidHandler> fluidHandler = LazyOptional.empty();
     private LazyOptional<IPeripheral> peripheralCap = LazyOptional.empty();
 
+    @SuppressWarnings("removal")
     protected PeripheralBlockEntity(BlockEntityType<?> tileEntityTypeIn, BlockPos pos, BlockState state) {
         super(tileEntityTypeIn, pos, state);
         if (this instanceof IInventoryBlock inventoryBlock) {
@@ -54,6 +55,7 @@ public abstract class PeripheralBlockEntity<T extends BasePeripheral<?>> extends
         }
     }
 
+    @SuppressWarnings("removal")
     @NotNull
     @Override
     public <U> LazyOptional<U> getCapability(@NotNull Capability<U> cap, @Nullable Direction direction) {
@@ -179,6 +181,7 @@ public abstract class PeripheralBlockEntity<T extends BasePeripheral<?>> extends
         return ClientboundBlockEntityDataPacket.create(this);
     }
 
+    @SuppressWarnings("removal")
     @NotNull
     @Override
     protected Component getDefaultName() {
@@ -191,6 +194,7 @@ public abstract class PeripheralBlockEntity<T extends BasePeripheral<?>> extends
         return createMenu(id, inventory);
     }
 
+    @SuppressWarnings("removal")
     @NotNull
     @Override
     protected AbstractContainerMenu createMenu(int id, @NotNull Inventory player) {
@@ -202,11 +206,13 @@ public abstract class PeripheralBlockEntity<T extends BasePeripheral<?>> extends
         return new int[]{0};
     }
 
+    @SuppressWarnings("removal")
     @Override
     public boolean canPlaceItemThroughFace(int index, @NotNull ItemStack itemStackIn, @Nullable Direction direction) {
         return this instanceof IInventoryBlock;
     }
 
+    @SuppressWarnings("removal")
     @Override
     public boolean canTakeItemThroughFace(int index, @NotNull ItemStack stack, @NotNull Direction direction) {
         return this instanceof IInventoryBlock;

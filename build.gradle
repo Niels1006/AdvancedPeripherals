@@ -2,6 +2,7 @@ import net.darkhax.curseforgegradle.TaskPublishCurseForge
 
 import java.text.SimpleDateFormat
 
+
 plugins {
     id "maven-publish"
     id 'net.darkhax.curseforgegradle' version '1.1.16'
@@ -17,7 +18,7 @@ plugins {
 
 java {
     toolchain {
-        languageVersion = JavaLanguageVersion.of(17)
+        languageVersion = JavaLanguageVersion.of(21)
     }
     withSourcesJar()
 }
@@ -167,6 +168,7 @@ minecraft {
 }
 
 repositories {
+    mavenLocal()
     mavenCentral()
     maven {
         name = "Blamejared maven botania patchouli"
@@ -270,9 +272,16 @@ dependencies {
     compileOnly "org.jetbrains:annotations:${jb_annotations}"
     minecraft "net.neoforged:forge:${minecraft_version}-${neo_version}"
     implementation fg.deobf("cc.tweaked:cc-tweaked-${minecraft_version}-forge:${cc_version}")
+
+    // Use local refinedstorage JAR if present (placed in project root libs/), otherwise Gradle will try to resolve the coordinate.
+    // This avoids ModuleVersionResolveException when GitHub Packages auth is not available.
+    // If you prefer the remote artifact, remove the local jar from libs/ and ensure the GitHub Packages credentials are configured.
+    // Note: keep only one of these two declarations active to prevent duplicate/ambiguous resolution.
+    // The actual refinedstorage dependency is defined later with a conditional; this placeholder is intentionally removed to prevent duplicates.
+
     // Compile-time API required
     // Ae2
-    compileOnly fg.deobf("appeng:appliedenergistics2-forge:${appliedenergistics_version}")
+//    compileOnly fg.deobf("appeng:appliedenergistics2-forge:${appliedenergistics_version}")
     // Curios
     compileOnly fg.deobf("top.theillusivec4.curios:curios-forge:${curios_version}:api")
     // Minimal requirements end
@@ -285,7 +294,7 @@ dependencies {
     // runtimeOnly fg.deobf("mekanism:Mekanism:${mekanism_version}")// core
 
     // Applied Energistics 2
-    runtimeOnly fg.deobf("appeng:appliedenergistics2-forge:${appliedenergistics_version}")
+//    runtimeOnly fg.deobf("appeng:appliedenergistics2-forge:${appliedenergistics_version}")
 
     // Applied Mekanistics
     implementation fg.deobf("curse.maven:applied-mekanistics-574300:${appliedmekanistics_version}")
@@ -294,8 +303,17 @@ dependencies {
     runtimeOnly fg.deobf("top.theillusivec4.curios:curios-forge:${curios_version}")
 
     // Refined Storage
-    implementation fg.deobf("com.refinedmods:refinedstorage:${refinedstorage_version}") {
-        transitive false
+    // Prefer a local JAR if the user put one into libs/ (e.g., libs/refinedstorage-1.12.3.jar).
+    if (file('libs/refinedstorage-1.12.3.jar').exists()) {
+        implementation files('libs/refinedstorage-1.12.3.jar')
+        implementation files('libs/appliedenergistics2-forge-15.5.0.jar')
+        // Make the local JAR available at runtime (dev run / run/mods)
+        runtimeOnly files('libs/refinedstorage-1.12.3.jar')
+        runtimeOnly files('libs/appliedenergistics2-forge-15.5.0.jar')
+    } else {
+        implementation fg.deobf("com.refinedmods:refinedstorage:${refinedstorage_version}") {
+            transitive false
+        }
     }
 
     // AE2 Things
@@ -552,7 +570,7 @@ publishing {
             publication.from((SoftwareComponent) components.java)
             publication.groupId = project.group
             publication.version = isSnapshotVersion ? "${minecraft_version}-${version}-${project.teamcityBuild}" : "${minecraft_version}-${version}"
-            publication.artifactId =  isSnapshotVersion ? "advancedperipherals-snapshots" : "advancedperipherals"
+            publication.artifactId = isSnapshotVersion ? "advancedperipherals-snapshots" : "advancedperipherals"
             publication.artifacts = [jar, sourcesJar]
             publication.pom {
                 name.set("AdvancedPeripherals")
