@@ -10,7 +10,7 @@ on:
 
 jobs:
   generate-artifact-name:
-    runs-on: self-hosted
+    runs-on: ubuntu-latest
     outputs:
       name: ${{ steps.name.outputs.name }}
     steps:
